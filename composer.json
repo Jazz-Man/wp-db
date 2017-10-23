@@ -1,0 +1,16 @@
+{
+    "name": "jazzman/wp-db",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "jazzman",
+            "email": "vsokolyk@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "JazzMan\\DB\\": ""
+        }
+    }
+}
