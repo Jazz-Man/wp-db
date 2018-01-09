@@ -1,6 +1,6 @@
-##The wrapper class to help WordPress CRUD for a single table.
+## The wrapper class to help WordPress CRUD for a single table.
 
-###How To Use
+### How To Use
 
 ```php
 $mydb = new Db( 'mytable_without_wpdb_prefix' );
