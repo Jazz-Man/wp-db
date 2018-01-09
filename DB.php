@@ -1,10 +1,11 @@
 <?php
 
-namespace JazzMan\DB;
+namespace JazzManDB;
 
 use Exception;
+use wpdb;
 
-if (!\defined('WPINC')) {
+if (!defined('WPINC')) {
 	die;
 }
 
@@ -64,7 +65,7 @@ class DB
 	 */
 	protected $charset;
 	/**
-	 * @var \wpdb
+	 * @var wpdb
 	 */
 	protected $wpdb;
 
@@ -81,7 +82,7 @@ class DB
 	 * @param string $tablename The table name
 	 * @param bool   $prefix
 	 */
-	public function __construct($tablename, $prefix = true)
+	public function __construct($tablename, $prefix = false)
 	{
 		global $wpdb;
 		if (null === $this->wpdb) {
@@ -99,7 +100,7 @@ class DB
 		$this->setColumn();
 	}
 
-	private function setColumn(): void
+	private function setColumn()
 	{
 		$this->column = $this->wpdb->get_col("DESCRIBE $this->tablename");
 	}
@@ -107,7 +108,7 @@ class DB
 	/**
 	 * @return string
 	 */
-	public function getTablename(): string
+	public function getTablename()
 	{
 		return $this->tablename;
 	}
@@ -122,11 +123,11 @@ class DB
 	 */
 	public function __call($method, $arguments)
 	{
-		if (\method_exists($this, $method)) {
+		if (method_exists($this, $method)) {
 			if ($this->table_exists()) {
-				return \call_user_func_array([$this, $method], $arguments);
+				return call_user_func_array([$this, $method], $arguments);
 			}
-			throw new Exception(\sprintf('Table for %s Not Exists in the Database', $this->tablename), 1);
+			throw new Exception(sprintf('Table for %s Not Exists in the Database', $this->tablename), 1);
 		}
 	}
 
@@ -137,7 +138,7 @@ class DB
 	 *
 	 * @return bool
 	 */
-	public function table_exists(): bool
+	public function table_exists()
 	{
 		$table = $this->wpdb->get_var($this->wpdb->prepare('SHOW TABLES like %s', $this->tablename));
 
@@ -147,16 +148,16 @@ class DB
 	/**
 	 * @param array|null $query
 	 */
-	public function table_create(array $query = null): void
+	public function table_create(array $query = null)
 	{
 		if (empty($query) || $this->table_exists()) {
 			return;
 		}
 
-		$query = \implode(',', $query);
+		$query = implode(',', $query);
 		$sql = "CREATE TABLE $this->tablename ($query) $this->charset;";
 		require_once ABSPATH.'wp-admin/includes/upgrade.php';
-		\dbDelta($sql);
+		dbDelta($sql);
 	}
 
 	/**
@@ -171,7 +172,7 @@ class DB
 	 *
 	 * @return array $results    The query results
 	 */
-	public function get_all($orderby = null, $order = null, array $limit = null, $output_type = null): array
+	public function get_all($orderby = null, $order = null, array $limit = null, $output_type = OBJECT)
 	{
 		$sql = "SELECT * FROM $this->tablename";
 		if (null !== $orderby) {
@@ -186,10 +187,10 @@ class DB
 		}
 		if (null !== $limit) {
 			$sql .= ' LIMIT ';
-			$sql .= \implode(',', $limit);
+			$sql .= implode(',', $limit);
 		}
 
-		return $this->wpdb->get_results($sql, $output_type ?? \OBJECT);
+		return $this->wpdb->get_results($sql, $output_type);
 	}
 
 	/** @noinspection MultipleReturnStatementsInspection
@@ -198,18 +199,18 @@ class DB
 	 *
 	 * @return string
 	 */
-	protected function check_column($columns, $return = 'string'): string
+	protected function check_column($columns, $return = 'string')
 	{
 		$_columns = $this->getColumn();
-		if (\is_array($columns)) {
+		if (is_array($columns)) {
 			foreach ((array) $columns as $key => $value) {
-				if (!\in_array($value, $_columns, true)) {
+				if (!in_array($value, $_columns, true)) {
 					unset($columns[$key]);
 				}
 			}
 			if (!empty($columns)) {
 				if ('string' === $return) {
-					return \implode(',', $columns);
+					return implode(',', $columns);
 				}
 
 				return $columns;
@@ -220,7 +221,7 @@ class DB
 		if ('*' === $columns) {
 			return $columns;
 		}
-		if (\in_array($columns, $_columns, true)) {
+		if (in_array($columns, $_columns, true)) {
 			return $columns;
 		}
 
@@ -244,12 +245,12 @@ class DB
 	 *
 	 * @param mixed $order
 	 */
-	protected function check_order($order = 'ASC'): string
+	protected function check_order($order = 'ASC')
 	{
 		if (null === $order) {
 			return 'ASC';
 		}
-		$order = \in_array($order, ['ASC', 'DESC'], true) ? $order : 'ASC';
+		$order = in_array($order, ['ASC', 'DESC'], true) ? $order : 'ASC';
 
 		return $order;
 	}
@@ -264,7 +265,7 @@ class DB
 	 *
 	 * @return array|null|object
 	 */
-	public function get_row($column, array $conditions, $operator = '=', $format = '%s', $output_type = \OBJECT, $row_offset = 0)
+	public function get_row($column, array $conditions, $operator = '=', $format = '%s', $output_type = OBJECT, $row_offset = 0)
 	{
 		$format = $this->check_format($format);
 		$operator = $this->check_operator($operator);
@@ -279,7 +280,7 @@ class DB
 				++$i;
 				continue;
 			}
-			if (\is_array($operator)) {
+			if (is_array($operator)) {
 				if (isset($operator[$field])) {
 					$op = $operator[$field];
 				} elseif (isset($operator[$i])) {
@@ -290,7 +291,7 @@ class DB
 			} else {
 				$op = $operator;
 			}
-			if (\is_array($format)) {
+			if (is_array($format)) {
 				if (isset($format[$field])) {
 					$f = $format[$field];
 				} elseif (isset($format[$i])) {
@@ -301,8 +302,8 @@ class DB
 			} else {
 				$f = $format;
 			}
-			$method = 'sql_'.\mb_strtolower(\str_replace(' ', '_', $op));
-			if (\method_exists($this, $method)) {
+			$method = 'sql_'.mb_strtolower(str_replace(' ', '_', $op));
+			if (method_exists($this, $method)) {
 				$sql .= $this->$method($field, $value, $f, true);
 			} else {
 				$sql .= $this->sql_default($field, $value, $op, $f, true);
@@ -324,14 +325,14 @@ class DB
 	protected function check_format($format)
 	{
 		$formats = [];
-		if (\is_array($format)) {
+		if (is_array($format)) {
 			foreach ($format as $k => $f) {
 				$formats[$k] = $this->check_format($f);
 			}
 
 			return $formats;
 		}
-		$format = (\in_array($format, ['%s', '%d', '%f'], true) ? $format : '%s');
+		$format = (in_array($format, ['%s', '%d', '%f'], true) ? $format : '%s');
 
 		return $format;
 	}
@@ -356,16 +357,16 @@ class DB
 		$format = '%s',
 		$orderby = null,
 		$order = 'ASC',
-		$output_type = \OBJECT
-	): array {
+		$output_type = OBJECT
+	) {
 		$order = $this->check_order($order);
 		$operator = $this->check_operator($operator);
 
 		$format = $this->check_format($format);
 		$column = $this->check_column($column);
 		$sql = "SELECT $column FROM $this->tablename WHERE";
-		$method = 'sql_'.\mb_strtolower(\str_replace(' ', '_', $operator));
-		if (\method_exists($this, $method)) {
+		$method = 'sql_'.mb_strtolower(str_replace(' ', '_', $operator));
+		if (method_exists($this, $method)) {
 			$sql .= $this->$method($field, $value, $format, false);
 		} else {
 			$sql .= $this->sql_default($field, $value, $operator, $format, false);
@@ -392,14 +393,14 @@ class DB
 	protected function check_operator($operator)
 	{
 		$operators = [];
-		if (\is_array($operator)) {
+		if (is_array($operator)) {
 			foreach ($operator as $k => $op) {
 				$operators[$k] = $this->check_operator($op);
 			}
 
 			return $operators;
 		}
-		$operator = (\in_array($operator, $this->get_operands(), true) ? \mb_strtoupper($operator) : '=');
+		$operator = (in_array($operator, $this->get_operands(), true) ? mb_strtoupper($operator) : '=');
 
 		return $operator;
 	}
@@ -407,7 +408,7 @@ class DB
 	/**
 	 * @return array
 	 */
-	protected function get_operands(): array
+	protected function get_operands()
 	{
 		return apply_filters(__METHOD__, [
 			'=',
@@ -436,7 +437,7 @@ class DB
 	 *
 	 * @return string
 	 */
-	protected function sql_default($column, $value, $op, $format = '%s', $and = true): string
+	protected function sql_default($column, $value, $op, $format = '%s', $and = true)
 	{
 		$sql = $this->_sql_and($and);
 		$sql .= $this->wpdb->prepare(" `$column` $op $format", $value);
@@ -449,13 +450,13 @@ class DB
 	 *
 	 * @return string
 	 */
-	protected function _sql_and($and = true): string
+	protected function _sql_and($and = true)
 	{
 		$_and = '';
 
 		if (true === $and) {
 			$_and = ' AND';
-		} elseif ('OR' === \mb_strtoupper($and)) {
+		} elseif ('OR' === mb_strtoupper($and)) {
 			$_and = ' OR';
 		}
 
@@ -470,7 +471,7 @@ class DB
 	 *
 	 * @return null|string
 	 */
-	public function get_var($column, array $conditions, $operator = '=', $format = '%s'): ?string
+	public function get_var($column, array $conditions, $operator = '=', $format = '%s')
 	{
 		$operator = $this->check_operator($operator);
 		$column = $this->check_column($column);
@@ -482,7 +483,7 @@ class DB
 				++$i;
 				continue;
 			}
-			if (\is_array($operator)) {
+			if (is_array($operator)) {
 				if (isset($operator[$field])) {
 					$op = $operator[$field];
 				} elseif (isset($operator[$i])) {
@@ -493,7 +494,7 @@ class DB
 			} else {
 				$op = $operator;
 			}
-			if (\is_array($format)) {
+			if (is_array($format)) {
 				if (isset($format[$field])) {
 					$f = $format[$field];
 				} elseif (isset($format[$i])) {
@@ -504,8 +505,8 @@ class DB
 			} else {
 				$f = $format;
 			}
-			$method = 'sql_'.\mb_strtolower(\str_replace(' ', '_', $op));
-			if (\method_exists($this, $method)) {
+			$method = 'sql_'.mb_strtolower(str_replace(' ', '_', $op));
+			if (method_exists($this, $method)) {
 				$sql .= $this->$method($field, $value, $f, true);
 			} else {
 				$sql .= $this->sql_default($field, $value, $op, $f, true);
@@ -538,14 +539,14 @@ class DB
 		$orderby = null,
 		$order = 'ASC',
 		$limit = null,
-		$output_type = \OBJECT
-	): array {
+		$output_type = OBJECT
+	) {
 		$order = $this->check_order($order);
 		$operator = $this->check_operator($operator);
 		$format = $this->check_format($format);
 		$column_custom = '';
-		if (\is_array($column) && \array_key_exists('_custom', $column)) {
-			$column_custom .= ','.\implode(',', $column['_custom']);
+		if (is_array($column) && array_key_exists('_custom', $column)) {
+			$column_custom .= ','.implode(',', $column['_custom']);
 		}
 		$column = $this->check_column($column);
 		$column .= $column_custom;
@@ -560,7 +561,7 @@ class DB
 				++$i;
 				continue;
 			}
-			if (\is_array($operator)) {
+			if (is_array($operator)) {
 				if (isset($operator[$field])) {
 					$op = $operator[$field];
 				} elseif (isset($operator[$i])) {
@@ -571,7 +572,7 @@ class DB
 			} else {
 				$op = $operator;
 			}
-			if (\is_array($format)) {
+			if (is_array($format)) {
 				if (isset($format[$field])) {
 					$f = $format[$field];
 				} elseif (isset($format[$i])) {
@@ -582,8 +583,8 @@ class DB
 			} else {
 				$f = $format;
 			}
-			$method = 'sql_'.\mb_strtolower(\str_replace(' ', '_', $op));
-			if (\method_exists($this, $method)) {
+			$method = 'sql_'.mb_strtolower(str_replace(' ', '_', $op));
+			if (method_exists($this, $method)) {
 				$sql .= $this->$method($field, $value, $f, true);
 			} else {
 				$sql .= $this->sql_default($field, $value, $op, $f, true);
@@ -600,9 +601,9 @@ class DB
 				}
 			}
 		}
-		if (null !== $limit && \is_array($limit)) {
+		if (null !== $limit && is_array($limit)) {
 			$sql .= ' LIMIT ';
-			$sql .= \implode(',', $limit);
+			$sql .= implode(',', $limit);
 		}
 
 		return $this->wpdb->get_results($sql, $output_type);
@@ -618,11 +619,11 @@ class DB
 	 *
 	 * @return int number of the count
 	 */
-	public function count(int $column_offset = null, int $row_offset = null): int
+	public function count($column_offset = 0, $row_offset = 0)
 	{
 		$sql = "SELECT COUNT(*) FROM $this->tablename";
 
-		return $this->wpdb->get_var($sql, $column_offset ?? 0, $row_offset ?? 0);
+		return $this->wpdb->get_var($sql, $column_offset, $row_offset);
 	}
 
 	/**
@@ -634,9 +635,9 @@ class DB
 	 *
 	 * @return array $returns  Array set of counts per column
 	 */
-	public function count_column($column): array
+	public function count_column($column)
 	{
-		$output_type = \ARRAY_A;
+		$output_type = ARRAY_A;
 		$column = $this->check_column($column);
 		$sql = "SELECT $column, COUNT(*) AS count FROM $this->tablename GROUP BY $column";
 		$totals = $this->wpdb->get_results($sql, $output_type);
@@ -661,7 +662,7 @@ class DB
 	 *
 	 * @return int The row ID
 	 */
-	public function insert(array $data, $format = '%s'): int
+	public function insert(array $data, $format = '%s')
 	{
 		if (empty($data)) {
 			return false;
@@ -747,7 +748,7 @@ class DB
 
 		$query .= " $query_columns ) VALUES ";
 
-		$query .= \implode(', ', $place_holders);
+		$query .= implode(', ', $place_holders);
 
 		if ($update) {
 			$_update = ' ON DUPLICATE KEY UPDATE ';
@@ -802,7 +803,7 @@ class DB
 	 *
 	 * @internal param array $conditionValue - Key value pair for the where clause of the query
 	 */
-	public function delete(array $conditions, $format = '%s'): int
+	public function delete(array $conditions, $format = '%s')
 	{
 		if (empty($conditions)) {
 			return false;
@@ -828,13 +829,13 @@ class DB
 	{
 		$format = $this->check_format($format);
 		// how many entries will we select?
-		$how_many = \count($conditionvalue);
+		$how_many = count($conditionvalue);
 		// prepare the right amount of placeholders
 		// if you're looing for strings, use '%s' instead
-		$placeholders = \array_fill(0, $how_many, $format);
+		$placeholders = array_fill(0, $how_many, $format);
 		// glue together all the placeholders...
 		// $format = '%s, %s, %s, %s, %s, [...]'
-		$format = \implode(', ', $placeholders);
+		$format = implode(', ', $placeholders);
 		$sql = "DELETE FROM $this->tablename WHERE $field IN ($format)";
 		$sql = $this->wpdb->prepare($sql, $conditionvalue);
 
@@ -842,9 +843,9 @@ class DB
 	}
 
 	/**
-	 * @return \wpdb
+	 * @return wpdb
 	 */
-	public function getWpdb(): \wpdb
+	public function getWpdb()
 	{
 		return $this->wpdb;
 	}
@@ -858,10 +859,10 @@ class DB
 	 *
 	 * @return string
 	 */
-	protected function sql_custom($column = null, $value, $op = '', $format = '%s', $and = true): string
+	protected function sql_custom($column = null, $value, $op = '', $format = '%s', $and = true)
 	{
 		$sql = '';
-		if (\is_array($value)) {
+		if (is_array($value)) {
 			foreach ($value as $val) {
 				$sql .= $this->_sql_and($and);
 				$sql .= " $val";
@@ -883,11 +884,11 @@ class DB
 	 *
 	 * @return string $sql       The prepared sql statement
 	 */
-	protected function sql_in($column, array $value, $format = '%s', $and = true): string
+	protected function sql_in($column, array $value, $format = '%s', $and = true)
 	{
-		$how_many = \count($value);
-		$placeholders = \array_fill(0, $how_many, $format);
-		$new_format = \implode(', ', $placeholders);
+		$how_many = count($value);
+		$placeholders = array_fill(0, $how_many, $format);
+		$new_format = implode(', ', $placeholders);
 		$sql = $this->_sql_and($and);
 		$sql .= " `$column` IN ($new_format)";
 		$sql = $this->wpdb->prepare($sql, $value);
@@ -907,11 +908,11 @@ class DB
 	 *
 	 * @return string $sql       The prepared sql statement
 	 */
-	protected function sql_not_in($column, array $value, $format = '%s', $and = true): string
+	protected function sql_not_in($column, array $value, $format = '%s', $and = true)
 	{
-		$how_many = \count($value);
-		$placeholders = \array_fill(0, $how_many, $format);
-		$new_format = \implode(', ', $placeholders);
+		$how_many = count($value);
+		$placeholders = array_fill(0, $how_many, $format);
+		$new_format = implode(', ', $placeholders);
 		$sql = $this->_sql_and($and);
 		$sql .= " `$column` NOT IN ($new_format)";
 		$sql = $this->wpdb->prepare($sql, $value);
@@ -933,9 +934,9 @@ class DB
 	 *
 	 * @throws Exception
 	 */
-	protected function sql_between($column, array $value, $format = '%s', $and = true): string
+	protected function sql_between($column, array $value, $format = '%s', $and = true)
 	{
-		if (\count($value) < 2) {
+		if (count($value) < 2) {
 			throw new Exception('Values for BETWEEN query must be more than one.', 1);
 		}
 		$sql = $this->_sql_and($and);
@@ -960,9 +961,9 @@ class DB
 	 */
 
 	/** @noinspection MoreThanThreeArgumentsInspection */
-	protected function sql_not_between($column, array $value, $format = '%s', $and = true): string
+	protected function sql_not_between($column, array $value, $format = '%s', $and = true)
 	{
-		if (\count($value) < 2) {
+		if (count($value) < 2) {
 			throw new Exception('Values for NOT BETWEEN query must be more than one.', 1);
 		}
 		$sql = $this->_sql_and($and);
@@ -983,7 +984,7 @@ class DB
 	 *
 	 * @return string $sql       The prepared sql statement
 	 */
-	protected function sql_like($column, $value, $format = '%s', $and = true): string
+	protected function sql_like($column, $value, $format = '%s', $and = true)
 	{
 		$sql = $this->_sql_and($and);
 		$sql .= $this->wpdb->prepare(" `$column` LIKE $format", $value);
@@ -1003,7 +1004,7 @@ class DB
 	 *
 	 * @return string $sql       The prepared sql statement
 	 */
-	protected function sql_not_like($column, $value, $format = '%s', $and = true): string
+	protected function sql_not_like($column, $value, $format = '%s', $and = true)
 	{
 		$sql = $this->_sql_and($and);
 		$sql .= $this->wpdb->prepare(" `$column` NOT LIKE $format", $value);
