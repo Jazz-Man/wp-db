@@ -1,6 +1,6 @@
 <?php
 
-namespace JazzManDB;
+namespace JazzMan\DB;
 
 use Exception;
 use wpdb;
